@@ -16,7 +16,7 @@
 #include "calend.h"
 // #define DEBUG_LOG
 
-//	структура меню экрана калькулятора
+//	структура меню экрана календаря
 struct regmenu_ menu_calend_screen = {
 						55,
 						1,
