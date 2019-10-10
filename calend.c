@@ -39,8 +39,6 @@ struct calend_** 	calend_p = get_ptr_temp_buf_2(); 	//	указатель на �
 struct calend_ *	calend;								//	указатель на данные экрана
 struct calend_opt_ calend_opt;							//	опции календаря
 
-Elf_proc_* proc;
-
 #ifdef DEBUG_LOG
 log_printf(5, "[show_calend_screen] param0=%X; *temp_buf_2=%X; menu_overlay=%d", (int)param0, (int*)get_ptr_temp_buf_2(), get_var_menu_overlay());
 log_printf(5, " #calend_p=%X; *calend_p=%X", (int)calend_p, (int)*calend_p);
@@ -80,11 +78,11 @@ if ( (param0 == *calend_p) && get_var_menu_overlay()){ // возврат из о
 	// очистим память под данные
 	_memclr(calend, sizeof(struct calend_));
 	
-	proc = param0;
+	calend->proc = param0;
 	
 	// запомним адрес указателя на функцию в которую необходимо вернуться после завершения данного экрана
 	if ( param0 ) 			//	если указатель на возврат передан, то возвоащаемся на него
-		calend->ret_f = proc->elf_finish;
+		calend->ret_f = calend->proc->elf_finish;
 	else					//	если нет, то на циферблат
 		calend->ret_f = show_watchface;
 	
@@ -99,7 +97,9 @@ if ( (param0 == *calend_p) && get_var_menu_overlay()){ // возврат из о
 	calend->year 	= datetime.year;
 
 	// считаем опции из flash памяти, если значение в флэш-памяти некорректное то берем первую схему
-	read_flash(OPTIONS_FLASH_ADDRESS + OPTIONS_OFFSET_CALEND, &calend_opt, sizeof(struct calend_opt_));
+	// текущая цветовая схема хранится о смещению 0
+	ElfReadSettings(calend->proc->index_listed, &calend_opt, OPT_OFFSET_CALEND_OPT, sizeof(struct calend_opt_));
+	
 	if (calend_opt.color_scheme < COLOR_SCHEME_COUNT) 
 			calend->color_scheme = calend_opt.color_scheme;
 	else 
@@ -524,9 +524,10 @@ int dispatch_calend_screen (void *param){
 					
 				// потом запись опций во flash память, т.к. это долгая операция
 				// TODO: 1. если опций будет больше чем цветовая схема - переделать сохранение, чтобы сохранять перед выходом.
-				//		 2. не правильно сохраняться в общее пространство, переделать для сохранения опций в пространстве эльфа
 				calend_opt.color_scheme = calend->color_scheme;	
-				write_flash(OPTIONS_FLASH_ADDRESS + OPTIONS_OFFSET_CALEND, &calend_opt, sizeof(struct calend_opt_));
+
+				// запишем настройки в флэш память
+				ElfWriteSettings(calend->proc->index_listed, &calend_opt, OPT_OFFSET_CALEND_OPT, sizeof(struct calend_opt_));
 			}
 			
 			

@@ -26,12 +26,8 @@
 // количество цыетовых схем
 #define COLOR_SCHEME_COUNT	5
 
-// адрес флэшпамяти для хранения настроек
-#define OPTIONS_FLASH_ADDRESS	0x007810B0
-// длина буфера в байтах
-#define OPTIONS_FLASH_LIMIT			80
 //	смещение адреса для хранения настроек календаря
-#define OPTIONS_OFFSET_CALEND		0
+#define OPT_OFFSET_CALEND_OPT		0
 
 #if FW_VERSION==latin_1_1_5_12 || FW_VERSION==latin_1_1_5_36
 // параметры рисования цифр календаря
@@ -75,6 +71,7 @@ struct calend_opt_ {
 // текущие данные просматриваемого/редактируемого календаря
 struct calend_ {
 		void* 	ret_f;					//	адрес функции возврата
+		Elf_proc_* proc;				//	указатель на данные запущенного процесса
 		unsigned char	color_scheme;	//	цветовая схема
 										//	отображаемый месяц
 unsigned int 	day;					//	день
