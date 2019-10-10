@@ -54,6 +54,7 @@ SET LABEL = %PROGRAM_NAME%
 %LD% -Map %PARTNAME%.map -o %PROGRAM_NAME%.elf %FILES_TO_COMPILE% %LD_OPT% %LIB_BIP%
 @if errorlevel 1 goto :error
 
+
 if exist label.txt (
 %OBJCOPY%  %PROGRAM_NAME%.elf --add-section .elf.label=label.txt
 )
@@ -62,6 +63,11 @@ if exist label.txt (
 %OBJCOPY%  %PROGRAM_NAME%.elf --add-section .elf.name=name.txt
 if exist name.txt del name.txt
 @if errorlevel 1 goto :error
+
+if exist settings.bin (
+%OBJCOPY%  %PROGRAM_NAME%.elf --add-section .elf.settings=settings.bin
+)
+
 
 @call :echoColor 0A "OK" 1
 @call :echoColor 0B "Сборка окончена." 1
