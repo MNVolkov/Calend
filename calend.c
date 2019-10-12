@@ -167,6 +167,7 @@ static unsigned char short_color_scheme[COLOR_SCHEME_COUNT][15] =
 
 int color_scheme[COLOR_SCHEME_COUNT][15];
 
+
 for (unsigned char i=0;i<COLOR_SCHEME_COUNT;i++)
 	for (unsigned char j=0;j<15;j++){
 	color_scheme[i][j]  = (((unsigned int)short_color_scheme[i][j]&(unsigned char)COLOR_SH_MASK)&COLOR_SH_RED)  ?COLOR_RED   :0;	//	составляющая красного цвета
