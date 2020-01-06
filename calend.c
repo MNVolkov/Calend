@@ -10,11 +10,15 @@
 	Функции перелистывания каленаря вверх-вниз - месяц, стрелками год
 	При нажатии на название месяца устанавливается текущая дата
 	
+	
+	v.1.1
+	- исправлены переходы в при запуске из бстрого меню
+	
 */
 
 #include <libbip.h>
 #include "calend.h"
-// #define DEBUG_LOG
+#define DEBUG_LOG
 
 //	структура меню экрана календаря
 struct regmenu_ menu_calend_screen = {
@@ -37,7 +41,7 @@ int main(int param0, char** argv){	//	переменная argv не опред�
 void show_calend_screen (void *param0){
 struct calend_** 	calend_p = get_ptr_temp_buf_2(); 	//	указатель на указатель на данные экрана 
 struct calend_ *	calend;								//	указатель на данные экрана
-struct calend_opt_ calend_opt;							//	опции календаря
+struct calend_opt_ 	calend_opt;							//	опции календаря
 
 #ifdef DEBUG_LOG
 log_printf(5, "[show_calend_screen] param0=%X; *temp_buf_2=%X; menu_overlay=%d", (int)param0, (int*)get_ptr_temp_buf_2(), get_var_menu_overlay());
@@ -81,7 +85,7 @@ if ( (param0 == *calend_p) && get_var_menu_overlay()){ // возврат из о
 	calend->proc = param0;
 	
 	// запомним адрес указателя на функцию в которую необходимо вернуться после завершения данного экрана
-	if ( param0 ) 			//	если указатель на возврат передан, то возвоащаемся на него
+	if ( param0 && calend->proc->elf_finish ) 			//	если указатель на возврат передан, то возвоащаемся на него
 		calend->ret_f = calend->proc->elf_finish;
 	else					//	если нет, то на циферблат
 		calend->ret_f = show_watchface;
@@ -473,9 +477,7 @@ int dispatch_calend_screen (void *param){
 	struct datetime_ datetime;
 	// получим текущую дату
 	
-	// продлить таймер выхода при бездействии через INACTIVITY_PERIOD с
-	set_update_period(1, INACTIVITY_PERIOD);
-	
+		
 	get_current_date_time(&datetime);
 	unsigned int day;
 	
@@ -531,18 +533,64 @@ int dispatch_calend_screen (void *param){
 				ElfWriteSettings(calend->proc->index_listed, &calend_opt, OPT_OFFSET_CALEND_OPT, sizeof(struct calend_opt_));
 			}
 			
-			
+			// продлить таймер выхода при бездействии через INACTIVITY_PERIOD с
+			set_update_period(1, INACTIVITY_PERIOD);
 			break;
 		};
-		case GESTURE_SWIPE_RIGHT: {	//	свайп направо
-			show_menu_animate(calend->ret_f, (unsigned int)show_calend_screen, ANIMATE_RIGHT);	
-	
-			break;
-		};
+		
+		case GESTURE_SWIPE_RIGHT: 	//	свайп направо
 		case GESTURE_SWIPE_LEFT: {	// справа налево
-				
+	
+			if ( get_left_side_menu_active()){
+					// в случае запуска через быстрое меню в proc->ret_f содержится dispatch_left_side_menu
+					// и после отработки elf_finish (на который указывает app_data->ret_f, произойдет запуск dispatch_left_side_menu c
+					// параметром структуры события тачскрина, содержащемся в app_data->proc->ret_param0
+					
+					// запускаем dispatch_left_side_menu с параметром param в результате произойдет запуск соответствующего бокового экрана
+					// при этом произойдет выгрузка данных текущего приложения и его деактивация.
+					set_update_period(0,0);
+					
+					void* show_f = get_ptr_show_menu_func();
+					dispatch_left_side_menu(param);
+										
+					if ( get_ptr_show_menu_func() == show_f ){
+						// если dispatch_left_side_menu отработал безуспешно (листать некуда) то в show_menu_func по прежнему будет 
+						// содержаться наша функция show_calend_screen, тогда просто игнорируем этот жест
+						// vibrate(1, 100, 100);
+						// продлить таймер выхода при бездействии через INACTIVITY_PERIOD с
+						set_update_period(1, INACTIVITY_PERIOD);
+						return 0;
+					}
+
+										
+					//	если dispatch_left_side_menu отработал, то завершаем наше приложение, т.к. данные экрана уже выгрузились
+					// на этом этапе уже выполняется новый экран (тот куда свайпнули)
+					
+					
+					Elf_proc_* proc = get_proc_by_addr(main);
+					proc->ret_f = NULL;
+					
+					elf_finish(main);	//	выгрузить Elf из памяти
+					return 0;
+				} else { 			//	если запуск не из быстрого меню, обрабатываем свайпы по отдельности
+					switch (gest->gesture){
+						case GESTURE_SWIPE_RIGHT: {	//	свайп направо
+							return show_menu_animate(calend->ret_f, (unsigned int)show_calend_screen, ANIMATE_RIGHT);	
+							break;
+						}
+						case GESTURE_SWIPE_LEFT: {	// справа налево
+							//	действие при запуске из меню и дальнейший свайп влево
+							
+							
+							break;
+						}
+					} /// switch (gest->gesture)
+				}
+
 			break;
-		};
+		};	//	case GESTURE_SWIPE_LEFT:
+		
+		
 		case GESTURE_SWIPE_UP: {	// свайп вверх
 			if ( calend->month < 12 ) 
 					calend->month++;
@@ -557,6 +605,9 @@ int dispatch_calend_screen (void *param){
 				day = 0;
 			draw_month(day, calend->month, calend->year);
 			repaint_screen_lines(1, 176);
+			
+			// продлить таймер выхода при бездействии через INACTIVITY_PERIOD с
+			set_update_period(1, INACTIVITY_PERIOD);
 			break;
 		};
 		case GESTURE_SWIPE_DOWN: {	// свайп вниз
@@ -573,6 +624,9 @@ int dispatch_calend_screen (void *param){
 				day = 0;
 			draw_month(day, calend->month, calend->year);			
 			repaint_screen_lines(1, 176);
+			
+			// продлить таймер выхода при бездействии через INACTIVITY_PERIOD с
+			set_update_period(1, INACTIVITY_PERIOD);
 			break;
 		};		
 		default:{	// что-то пошло не так...
@@ -580,6 +634,7 @@ int dispatch_calend_screen (void *param){
 		};		
 		
 	}
+	
 	
 	return result;
 };

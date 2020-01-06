@@ -70,13 +70,13 @@ struct calend_opt_ {
 
 // текущие данные просматриваемого/редактируемого календаря
 struct calend_ {
-		void* 	ret_f;					//	адрес функции возврата
-		Elf_proc_* proc;				//	указатель на данные запущенного процесса
-		unsigned char	color_scheme;	//	цветовая схема
-										//	отображаемый месяц
-unsigned int 	day;					//	день
-unsigned int 	month;					//	месяц
-unsigned int 	year;					//	год
+	Elf_proc_* 	proc;				//	указатель на данные запущенного процесса
+		void* 	ret_f;				//	адрес функции возврата
+unsigned char	color_scheme;		//	цветовая схема
+									//	отображаемый месяц
+unsigned int 	day;				//	день
+unsigned int 	month;				//	месяц
+unsigned int 	year;				//	год
 };
 
 
