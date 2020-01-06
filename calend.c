@@ -542,21 +542,18 @@ int dispatch_calend_screen (void *param){
 		case GESTURE_SWIPE_LEFT: {	// справа налево
 	
 			if ( get_left_side_menu_active()){
-					// в случае запуска через быстрое меню в proc->ret_f содержится dispatch_left_side_menu
-					// и после отработки elf_finish (на который указывает app_data->ret_f, произойдет запуск dispatch_left_side_menu c
-					// параметром структуры события тачскрина, содержащемся в app_data->proc->ret_param0
-					
-					// запускаем dispatch_left_side_menu с параметром param в результате произойдет запуск соответствующего бокового экрана
-					// при этом произойдет выгрузка данных текущего приложения и его деактивация.
 					set_update_period(0,0);
 					
 					void* show_f = get_ptr_show_menu_func();
+
+					// запускаем dispatch_left_side_menu с параметром param в результате произойдет запуск соответствующего бокового экрана
+					// при этом произойдет выгрузка данных текущего приложения и его деактивация.
 					dispatch_left_side_menu(param);
 										
 					if ( get_ptr_show_menu_func() == show_f ){
 						// если dispatch_left_side_menu отработал безуспешно (листать некуда) то в show_menu_func по прежнему будет 
 						// содержаться наша функция show_calend_screen, тогда просто игнорируем этот жест
-						// vibrate(1, 100, 100);
+						
 						// продлить таймер выхода при бездействии через INACTIVITY_PERIOD с
 						set_update_period(1, INACTIVITY_PERIOD);
 						return 0;
